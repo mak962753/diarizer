@@ -30,9 +30,20 @@ Uses WASAPI loopback via `pyaudiowpatch` (`uv sync --extra win`).
 uv run diarizer --list-devices
 uv run diarizer
 uv run diarizer --mic "MacBook" --system BlackHole --language ru --whisper-model small
+uv run diarizer --no-summarize
 ```
 
 Outputs land under `meetings/<timestamp>/`.
+
+### Summarize an existing transcript
+
+Uses `llama-cli` (Homebrew `llama.cpp`) and `[llm]` settings in `config.toml`:
+
+```bash
+uv run diarizer-summarize meetings/2026-01-01_12-00-00/
+uv run diarizer-summarize meetings/2026-01-01_12-00-00/meeting_speakers.txt
+uv run diarizer-summarize path/to/transcript.txt -o summary.md
+```
 
 ## Models
 

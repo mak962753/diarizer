@@ -23,6 +23,7 @@ win = [
 [project.scripts]
 diarizer = "diarizer:main"
 diarizer-download-models = "diarizer.download_models:main"
+diarizer-summarize = "diarizer.summarize:main"
 
 [build-system]
 requires = ["uv_build>=0.12.11,<0.13.0"]

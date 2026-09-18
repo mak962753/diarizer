@@ -18,8 +18,10 @@ from diarizer.audio import (
     print_devices,
     resolve_device,
 )
+from diarizer.config import load_llm_config
 from diarizer.diarize import run_diarization_files
 from diarizer.paths import OUTPUT_ROOT
+from diarizer.summarize import summarize_meeting_dir
 
 MIC_VOLUME = 1.0
 SYSTEM_VOLUME = 1.0
@@ -256,6 +258,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=OUTPUT_ROOT,
         help=f"Output root directory (default: {OUTPUT_ROOT})",
     )
+    parser.add_argument(
+        "--summarize",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Run local llama-cli summary after transcription "
+            "(default: [llm].summarize in config.toml)"
+        ),
+    )
     return parser
 
 
@@ -391,6 +402,28 @@ def main(argv: list[str] | None = None) -> None:
         print()
         print("Обычная транскрипция УЖЕ сохранена.")
 
+    summary_file = output_dir / "meeting_summary.md"
+    do_summarize = args.summarize
+    if do_summarize is None:
+        try:
+            do_summarize = load_llm_config().summarize
+        except Exception:
+            do_summarize = False
+
+    if do_summarize:
+        try:
+            summarize_meeting_dir(output_dir)
+        except Exception as exc:
+            print()
+            print("=" * 60)
+            print("SUMMARIZATION FAILED")
+            print("=" * 60)
+            print()
+            print(type(exc).__name__)
+            print(exc)
+            print()
+            print("Транскрипция УЖЕ сохранена.")
+
     print()
     print("=" * 60)
     print("DONE")
@@ -407,6 +440,8 @@ def main(argv: list[str] | None = None) -> None:
     print(f"VTT:          {vtt_file}")
     if speakers_file.exists():
         print(f"Speakers:     {speakers_file}")
+    if summary_file.exists():
+        print(f"Summary:      {summary_file}")
 
 
 if __name__ == "__main__":
