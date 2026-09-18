@@ -45,6 +45,27 @@ uv run diarizer-summarize meetings/2026-01-01_12-00-00/meeting_speakers.txt
 uv run diarizer-summarize path/to/transcript.txt -o summary.md
 ```
 
+### Diarize an existing recording
+
+Re-run pyannote only (needs existing Whisper segments):
+
+```bash
+uv run diarizer-diarize meetings/2026-01-01_12-00-00/
+uv run diarizer-diarize meetings/2026-01-01_12-00-00/meeting.wav
+```
+
+### STT + diarize an existing recording
+
+Re-run Whisper and diarization from saved audio (no re-record):
+
+```bash
+uv run diarizer-process meetings/2026-01-01_12-00-00/
+uv run diarizer-process meetings/2026-01-01_12-00-00/meeting.wav
+uv run diarizer-process meeting.wav --language ru --whisper-model small
+uv run diarizer-process meeting.wav --no-diarize
+uv run diarizer-process meeting.wav --no-summarize
+```
+
 ## Models
 
 Whisper downloads into its usual cache on first use.

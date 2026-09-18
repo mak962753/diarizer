@@ -24,6 +24,8 @@ win = [
 diarizer = "diarizer:main"
 diarizer-download-models = "diarizer.download_models:main"
 diarizer-summarize = "diarizer.summarize:main"
+diarizer-diarize = "diarizer.diarize:main"
+diarizer-process = "diarizer.process:main"
 
 [build-system]
 requires = ["uv_build>=0.12.11,<0.13.0"]

@@ -253,30 +253,105 @@ def run_diarization_files(
     print(f"Output: {output_file}")
 
 
+AUDIO_CANDIDATES = ("meeting.wav",)
+TRANSCRIPT_CANDIDATES = (
+    "meeting_segments.json",
+    "meeting_timestamps.txt",
+)
+
+
+def resolve_diarization_inputs(
+    path: Path,
+    *,
+    transcript: Path | None = None,
+    output: Path | None = None,
+) -> tuple[Path, Path, Path]:
+    """Resolve audio/transcript/output from a meeting folder or audio file."""
+    path = path.expanduser().resolve()
+
+    if path.is_dir():
+        meeting_dir = path
+        audio = None
+        for name in AUDIO_CANDIDATES:
+            candidate = meeting_dir / name
+            if candidate.is_file():
+                audio = candidate
+                break
+        if audio is None:
+            raise FileNotFoundError(
+                f"No audio found in {meeting_dir}. "
+                f"Looked for: {', '.join(AUDIO_CANDIDATES)}"
+            )
+    elif path.is_file():
+        audio = path
+        meeting_dir = path.parent
+    else:
+        raise FileNotFoundError(path)
+
+    if transcript is not None:
+        transcript_file = transcript.expanduser().resolve()
+    else:
+        transcript_file = None
+        for name in TRANSCRIPT_CANDIDATES:
+            candidate = meeting_dir / name
+            if candidate.is_file():
+                transcript_file = candidate
+                break
+        if transcript_file is None:
+            raise FileNotFoundError(
+                f"No transcript found next to audio in {meeting_dir}. "
+                f"Looked for: {', '.join(TRANSCRIPT_CANDIDATES)}. "
+                "Pass --transcript explicitly."
+            )
+
+    if output is not None:
+        output_file = output.expanduser().resolve()
+    else:
+        output_file = meeting_dir / "meeting_speakers.txt"
+
+    return audio, transcript_file, output_file
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Diarize meeting.wav against a Whisper transcript."
+        description=(
+            "Run speaker diarization on an existing recording. "
+            "Pass a meetings/<timestamp>/ folder or a .wav file."
+        )
     )
-    parser.add_argument("audio_file", type=Path)
     parser.add_argument(
-        "transcript_file",
+        "path",
         type=Path,
-        help="meeting_segments.json (preferred) or meeting_timestamps.txt",
+        help="Meeting folder or audio file (e.g. meeting.wav)",
     )
-    parser.add_argument("output_file", type=Path)
+    parser.add_argument(
+        "--transcript",
+        type=Path,
+        default=None,
+        help=(
+            "Whisper segments JSON or timestamps TXT "
+            "(default: meeting_segments.json / meeting_timestamps.txt beside audio)"
+        ),
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="Output path (default: meeting_speakers.txt beside audio)",
+    )
     args = parser.parse_args(argv)
 
-    run_diarization_files(
-        args.audio_file,
-        args.transcript_file,
-        args.output_file,
-    )
-    return 0
-
-
-if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        audio, transcript, output = resolve_diarization_inputs(
+            args.path,
+            transcript=args.transcript,
+            output=args.output,
+        )
+        print(f"Audio:      {audio}")
+        print(f"Transcript: {transcript}")
+        print(f"Output:     {output}")
+        run_diarization_files(audio, transcript, output)
     except Exception as exc:
         print()
         print("=" * 60)
@@ -284,4 +359,10 @@ if __name__ == "__main__":
         print("=" * 60)
         print(type(exc).__name__)
         print(exc)
-        raise
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
